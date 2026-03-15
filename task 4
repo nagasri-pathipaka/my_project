@@ -1,0 +1,74 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import nltk
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+import re
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
+
+# Download necessary NLTK data
+nltk.download('stopwords')
+nltk.download('wordnet')
+
+# --- STEP 1: CREATE SAMPLE DATA ---
+# (In a real scenario, you'd load a CSV of tweets or reviews)
+data = {
+    'review': [
+        "I absolutely loved this movie, it was fantastic!",
+        "The plot was boring and the acting was terrible.",
+        "An incredible masterpiece with great visuals.",
+        "Waste of time. I hated every minute of it.",
+        "The best film I have seen this year, highly recommend.",
+        "Avoid at all costs, the script was awful.",
+        "It was okay, but not something I would watch again.",
+        "Simply brilliant performance by the lead actor."
+    ],
+    'sentiment': [1, 0, 1, 0, 1, 0, 0, 1]  # 1 = Positive, 0 = Negative
+}
+df = pd.DataFrame(data)
+
+# --- STEP 2: DATA PREPROCESSING ---
+def clean_text(text):
+    text = text.lower() # Lowercase
+    text = re.sub(r'[^a-z\s]', '', text) # Remove punctuation/special chars
+    words = text.split()
+    # Remove Stopwords (common words like 'the', 'is')
+    stop_words = set(stopwords.words('english'))
+    words = [w for w in words if w not in stop_words]
+    return " ".join(words)
+
+df['cleaned_review'] = df['review'].apply(clean_text)
+print("--- Processed Data ---")
+print(df[['review', 'cleaned_review']].head())
+
+# --- STEP 3: FEATURE EXTRACTION (TF-IDF) ---
+# Converts text into numerical vectors that the computer can understand
+tfidf = TfidfVectorizer()
+X = tfidf.fit_transform(df['cleaned_review'])
+y = df['sentiment']
+
+# --- STEP 4: MODEL TRAINING ---
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+model = MultinomialNB()
+model.fit(X_train, y_train)
+
+# --- STEP 5: EVALUATION ---
+y_pred = model.predict(X_test)
+print(f"\nModel Accuracy: {accuracy_score(y_test, y_pred) * 100}%")
+print("\n--- Classification Report ---")
+print(classification_report(y_test, y_pred))
+
+# --- STEP 6: TEST WITH YOUR OWN TEXT ---
+def predict_sentiment(text):
+    cleaned = clean_text(text)
+    vector = tfidf.transform([cleaned])
+    prediction = model.predict(vector)
+    return "Positive 😊" if prediction[0] == 1 else "Negative 😞"
+
+print("\nCustom Test:")
+print(f"Text: 'The cinematography was beautiful!' -> {predict_sentiment('The cinematography was beautiful!')}")
