@@ -1,0 +1,10 @@
+mport plotly.express as px
+
+# Load Dataset
+df = px.data.gapminder().query("year == 2007")
+
+# Create Interactive Dashboard Plot
+fig = px.scatter(df, x="gdpPercap", y="lifeExp", size="pop", color="continent",
+                 hover_name="country", log_x=True, size_max=60,
+                 title="Global Life Expectancy vs GDP (2007)")
+fig.show()
